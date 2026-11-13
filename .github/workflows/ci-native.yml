@@ -23,17 +23,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # Фикс для старых версий Flask/Jinja2
           pip install markupsafe==2.0.1
           pip install flake8
 
-      # Шаг Lint удален, так как старый код несовместим с Python 3
-
       - name: Initialize SQLite database
         run: |
-          # Создаем базу напрямую через фабрику приложений, чтобы не зависеть от manage.py
+          # Исправлен путь импорта (добавлено .app)
           python -c "
-          from application import create_app
+          from application.app import create_app
           from application.extensions import db
           app = create_app()
           with app.app_context():
@@ -44,7 +41,6 @@ jobs:
       - name: Run Flask server in background
         run: |
           export FLASK_APP=manage.py
-          # Запускаем сервер в фоне
           nohup python manage.py runserver > flask.log 2>&1 &
           
           echo "Ожидание запуска сервера..."
