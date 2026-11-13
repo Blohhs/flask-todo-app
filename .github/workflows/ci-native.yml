@@ -1,4 +1,4 @@
-name: CI Native Flask
+name: Native CI Pipeline
 
 on:
   push:
@@ -9,48 +9,24 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    container:
+      image: python:2.7-slim
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install markupsafe==2.0.1
+    - name: Initialize SQLite Database
+      run: |
+        python manage.py db upgrade
 
-      - name: Run Flask server in background
-        run: |
-          export FLASK_APP=application:create_app
-          # Запускаем сервер в фоне
-          nohup flask run --host=127.0.0.1 --port=5000 > flask.log 2>&1 &
-          
-          echo "Ожидание запуска сервера..."
-          for i in $(seq 1 30); do
-            if curl -s http://127.0.0.1:5000/ > /dev/null 2>&1; then
-              echo "Сервер запустился с попытки $i"
-              break
-            fi
-            sleep 1
-          done
-          
-          echo "----- Логи сервера (flask.log) -----"
-          cat flask.log
-          
-          # Если сервер не запустился, завершаем с ошибкой
-          curl -f -s http://127.0.0.1:5000/ > /dev/null || exit 1
-
-      - name: Smoke test Flask server
-        run: |
-          curl -f -s -o /dev/null -w "HTTP %{http_code}\n" http://127.0.0.1:5000/
-          echo "Smoke test passed"
-
-      - name: Show flask log on failure
-        if: failure()
-        run: cat flask.log || true
+    - name: Smoke test Flask server
+      run: |
+        python manage.py runserver -h 0.0.0.0 -p 7345 &
+        sleep 5
+        python -c "import urllib2; urllib2.urlopen('http://localhost:7345/')" || exit 1
