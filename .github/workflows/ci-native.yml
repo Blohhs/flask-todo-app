@@ -28,9 +28,10 @@ jobs:
 
       - name: Initialize SQLite database
         run: |
-          # Исправлен путь импорта (добавлено .app)
+          # Добавляем текущую директорию в PYTHONPATH, чтобы импорт app работал корректно
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
           python -c "
-          from application.app import create_app
+          from application import create_app
           from application.extensions import db
           app = create_app()
           with app.app_context():
@@ -41,6 +42,7 @@ jobs:
       - name: Run Flask server in background
         run: |
           export FLASK_APP=manage.py
+          # Запускаем сервер в фоне
           nohup python manage.py runserver > flask.log 2>&1 &
           
           echo "Ожидание запуска сервера..."
