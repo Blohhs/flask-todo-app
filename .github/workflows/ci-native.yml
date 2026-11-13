@@ -27,8 +27,8 @@ jobs:
 
       - name: Run Flask server in background
         run: |
-          # Запускаем сервер напрямую, указывая правильный путь к приложению
           export FLASK_APP=application:create_app
+          # Запускаем сервер в фоне
           nohup flask run --host=127.0.0.1 --port=5000 > flask.log 2>&1 &
           
           echo "Ожидание запуска сервера..."
@@ -39,8 +39,12 @@ jobs:
             fi
             sleep 1
           done
-          echo "----- Логи сервера -----"
+          
+          echo "----- Логи сервера (flask.log) -----"
           cat flask.log
+          
+          # Если сервер не запустился, завершаем с ошибкой
+          curl -f -s http://127.0.0.1:5000/ > /dev/null || exit 1
 
       - name: Smoke test Flask server
         run: |
