@@ -24,26 +24,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install markupsafe==2.0.1
-          pip install flake8
-
-      - name: Initialize SQLite database
-        run: |
-          # Добавляем текущую директорию в PYTHONPATH, чтобы импорт app работал корректно
-          export PYTHONPATH=$PYTHONPATH:$(pwd)
-          python -c "
-          from application import create_app
-          from application.extensions import db
-          app = create_app()
-          with app.app_context():
-              db.create_all()
-              print('Database created successfully!')
-          "
 
       - name: Run Flask server in background
         run: |
-          export FLASK_APP=manage.py
-          # Запускаем сервер в фоне
-          nohup python manage.py runserver > flask.log 2>&1 &
+          # Запускаем сервер напрямую, указывая правильный путь к приложению
+          export FLASK_APP=application:create_app
+          nohup flask run --host=127.0.0.1 --port=5000 > flask.log 2>&1 &
           
           echo "Ожидание запуска сервера..."
           for i in $(seq 1 30); do
